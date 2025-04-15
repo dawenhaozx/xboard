@@ -113,7 +113,8 @@ class Helper
         $strs = 'QWERTYUIOPASDFGHJKLZXCVBNM1234567890qwertyuiopasdfghjklzxcvbnm';
         $randstr = substr(str_shuffle($strs), 0, rand(4,8));
         
-        $path = route('client.subscribe', ['token' => $token], false);
+        $basePath = admin_setting('subscribe_path', route('client.subscribe', [], false));
+        $path = $basePath . "?token={$token}";
         if(!$subscribeUrl){
             $subscribeUrls = explode(',', admin_setting('subscribe_url'));
             $subscribeUrl = \Arr::random($subscribeUrls);
