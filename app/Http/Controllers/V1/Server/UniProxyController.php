@@ -155,6 +155,14 @@ class UniProxyController extends Controller
                     'obfs' => $nodeInfo->is_obfs ? Helper::getServerKey($nodeInfo->created_at, 16) : null
                 ];
                 break;
+            case 'tuic':
+                $response = [
+                    'server_port' => $nodeInfo->server_port,
+                    'server_name' => $nodeInfo->server_name,
+                    'congestion_control' => $nodeInfo->congestion_control,
+                    'zero_rtt_handshake' => $nodeInfo->zero_rtt_handshake ? true : false,
+                ];
+                break;
             case "vless":
                 $response = [
                     'server_port' => $nodeInfo->server_port,

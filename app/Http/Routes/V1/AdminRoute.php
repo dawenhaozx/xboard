@@ -66,6 +66,14 @@ class AdminRoute
                 $router->post('copy', 'V1\\Admin\\Server\\HysteriaController@copy');
             });
             $router->group([
+                'prefix' => 'server/tuic'
+            ], function ($router) {
+                $router->post('save', 'V1\\Admin\\Server\\TuicController@save');
+                $router->post('drop', 'V1\\Admin\\Server\\TuicController@drop');
+                $router->post('update', 'V1\\Admin\\Server\\TuicController@update');
+                $router->post('copy', 'V1\\Admin\\Server\\TuicController@copy');
+            });
+            $router->group([
                 'prefix' => 'server/vless'
             ], function ($router) {
                 $router->post('save', 'V1\\Admin\\Server\\VlessController@save');

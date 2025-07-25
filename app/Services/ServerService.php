@@ -6,6 +6,7 @@ use App\Models\ServerHysteria;
 use App\Models\ServerLog;
 use App\Models\ServerRoute;
 use App\Models\ServerShadowsocks;
+use App\Models\ServerTuic;
 use App\Models\ServerVless;
 use App\Models\User;
 use App\Models\ServerVmess;
@@ -17,6 +18,27 @@ use Illuminate\Support\Facades\Cache;
 
 class ServerService
 {
+    // 获取可用的 TUIC 服务器列表
+    public static function getAvailableTuic(User $user)
+    {
+        $availableServers = [];
+        $model = ServerTuic::orderBy('sort', 'ASC');
+        $servers = $model->get()->keyBy('id');
+        foreach ($servers as $key => $v) {
+            if (!$v['show']) continue;
+            $servers[$key]['type'] = 'tuic';
+            $servers[$key]['last_check_at'] = Cache::get(CacheKey::get('SERVER_TUIC_LAST_CHECK_AT', $v['id']));
+            if (!in_array($user->group_id, $v['group_id'])) continue;
+            if (isset($servers[$v['parent_id']])) {
+                $servers[$key]['last_check_at'] = Cache::get(CacheKey::get('SERVER_TUIC_LAST_CHECK_AT', $v['parent_id']));
+                $servers[$key]['created_at'] = $servers[$v['parent_id']]['created_at'];
+            }
+            $servers[$key]['server_key'] = Helper::getServerKey($servers[$key]['created_at'], 16);
+            $availableServers[] = $servers[$key]->toArray();
+        }
+        return $availableServers;
+    }
+
     // 获取可用的 VLESS 服务器列表
     public static function getAvailableVless(User $user): array
     {
@@ -180,6 +202,7 @@ class ServerService
                 self::getAvailableVmess($user),
                 self::getAvailableTrojan($user),
                 self::getAvailableHysteria($user),
+                self::getAvailableTuic($user),
                 self::getAvailableVless($user)
             );
         });
@@ -270,6 +293,18 @@ class ServerService
         return $servers;
     }
 
+    // 获取所有 TUIC 服务器列表
+    public function getAllTuic()
+    {
+        $servers = ServerTuic::orderBy('sort', 'ASC')
+            ->get()
+            ->toArray();
+        foreach ($servers as $k => $v) {
+            $servers[$k]['type'] = 'tuic';
+        }
+        return $servers;
+    }
+
     // 获取所有 VLESS 服务器列表
     public static function getAllVLess()
     {
@@ -341,6 +376,7 @@ class ServerService
             self::getAllVMess(),
             self::getAllTrojan(),
             self::getAllHysteria(),
+            self::getAllTuic(),
             self::getAllVLess()
         );
         self::mergeData($servers);
@@ -372,6 +408,8 @@ class ServerService
                 return ServerShadowsocks::find($serverId);
             case 'trojan':
                 return ServerTrojan::find($serverId);
+            case 'tuic':
+                return ServerTuic::find($serverId);
             case 'hysteria':
                 return ServerHysteria::find($serverId);
             case 'vless':

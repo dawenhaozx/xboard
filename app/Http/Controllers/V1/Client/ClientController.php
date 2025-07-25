@@ -29,7 +29,7 @@ class ClientController extends Controller
         'surge' => '2398'
     ];
     // allowed types
-    const AllowedTypes = ['vmess', 'vless', 'trojan', 'hysteria', 'shadowsocks', 'hysteria2'];
+    const AllowedTypes = ['vmess', 'tuic', 'vless', 'trojan', 'hysteria', 'shadowsocks', 'hysteria2'];
 
     public function subscribe(Request $request)
     {
@@ -127,6 +127,7 @@ class ClientController extends Controller
         if (admin_setting('show_protocol_to_server_enable')) {
             $typePrefixes = [
                 'hysteria' => [1 => '[Hy]', 2 => '[Hy2]'],
+                'tuic' => '[tuic]',
                 'vless' => '[vless]',
                 'shadowsocks' => '[ss]',
                 'vmess' => '[vmess]',
