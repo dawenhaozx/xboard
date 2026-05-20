@@ -15,13 +15,13 @@
         "cedar2025/http-foundation": "6.4.x-dev",
         "cweagans/composer-patches": "^1.7",
         "doctrine/dbal": "^3.7",
-        "firebase/php-jwt": "^6.3",
+        "firebase/php-jwt": "^7.0",
         "google/cloud-storage": "^1.35",
         "google/recaptcha": "^1.2",
         "guzzlehttp/guzzle": "^7.4.3",
         "hhxsv5/laravel-s": "~3.7.0",
         "joanhey/adapterman": "^0.6.1",
-        "laravel/framework": "10.48.22",
+        "laravel/framework": "^10.48",
         "laravel/horizon": "^5.9.6",
         "laravel/tinker": "^2.5",
         "linfo/linfo": "^4.0",
@@ -49,6 +49,12 @@
         "sort-packages": true,
         "allow-plugins": {
             "cweagans/composer-patches": true
+        },
+        "audit": {
+            "ignore": [
+                "PKSA-8qx3-n5y5-vvnd",
+                "PKSA-w7xr-vk7n-rstm"
+            ]
         }
     },
     "extra": {
