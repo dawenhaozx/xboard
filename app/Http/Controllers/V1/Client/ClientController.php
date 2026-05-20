@@ -61,7 +61,12 @@ class ClientController extends Controller
             if ($flag) {
                 foreach (array_reverse(glob(app_path('Protocols') . '/*.php')) as $file) {
                     $file = 'App\\Protocols\\' . basename($file, '.php');
-                    $class = new $file($user, $servers);
+                    // 识别 sing-box 客户端版本，传入协议类
+                    $singboxVersion = null;
+                    if (stripos($flag, 'sing-box') !== false || stripos($flag, 'hiddify') !== false) {
+                        $singboxVersion = $version; // 已由上方 preg_match 解析
+                    }
+                    $class = new $file($user, $servers, ['singbox_version' => $singboxVersion]);
                     $classFlags = explode(',', $class->flag);
                     foreach ($classFlags as $classFlag) {
                         if (stripos($flag, $classFlag) !== false) {
