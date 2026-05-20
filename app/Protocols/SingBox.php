@@ -11,17 +11,20 @@ class SingBox
     private $config;
     private $isLegacy; // true = 1.x, false = 2.x+
 
-    public function __construct($user, $servers, array $options = null)
-    {
-        $this->user = $user;
-        $this->servers = $servers;
+public function __construct($user, $servers, array $options = null)
+{
+    $this->user = $user;
+    $this->servers = $servers;
 
-        // 解析版本：1.12.x+ 为新版，1.11.x 为旧版，无法识别默认新版
-        $version = $options['singbox_version'] ?? null;
-        $this->isLegacy = $version
-            ? version_compare($version, '1.12.0', '<')
-            : false;
-    }
+    $version = $options['singbox_version'] ?? null;
+    
+    // 修复：version 无法解析时默认旧版（保守策略），避免新版模板在旧客户端报错
+    // 1.12.0+ 为新版，其余含 null 默认旧版
+    $this->isLegacy = $version
+        ? version_compare($version, '1.12.0', '<')
+        : true;  // ← 改为 true（保守）
+}
+
 
     public function handle()
     {
@@ -89,41 +92,36 @@ class SingBox
         $this->config['outbounds'] = array_merge($outbounds, $proxies);
     }
 
-    protected function buildRule()
-    {
-        $rules = $this->config['route']['rules'];
+protected function buildRule()
+{
+    $rules = $this->config['route']['rules'];
 
-        $serverIps = collect($this->servers)
-            ->pluck('host')
-            ->map(function ($host) {
-                return filter_var($host, FILTER_VALIDATE_IP)
-                    ? [$host]
-                    : Helper::getIpByDomainName($host);
-            })
-            ->flatten()
-            ->unique()
-            ->values()
-            ->toArray();
+    $serverIps = collect($this->servers)
+        ->pluck('host')
+        ->map(function ($host) {
+            if (filter_var($host, FILTER_VALIDATE_IP)) {
+                return [$host];
+            }
+            $ips = Helper::getIpByDomainName($host);
+            // 修复：过滤掉解析失败的 null/false/空值
+            return is_array($ips) ? array_filter($ips) : [];
+        })
+        ->flatten()
+        ->filter()          // ← 关键：去掉所有假值
+        ->unique()
+        ->values()
+        ->toArray();
 
-        if ($this->isLegacy) {
-            // 1.x：字段名为 ip_cidr
-            array_unshift($rules, [
-                'ip_cidr'  => $serverIps,
-                'outbound' => 'direct',
-            ]);
-        } else {
-            // 2.x+：ip_cidr 改为 ip_is_private 同级，字段名保持 ip_cidr
-            // 但 rule_set 引用方式、action 字段等有变化
-            array_unshift($rules, [
-                'ip_cidr'  => $serverIps,
-                'outbound' => 'direct',
-            ]);
-            // 2.x 新增：将 route.rules 里的 rule_set 引用由旧式 string[] 转为 object 格式
-            // 这部分由模板文件自身处理，代码层无需额外转换
-        }
-
-        $this->config['route']['rules'] = $rules;
+    // 只在有有效 IP 时才插入规则，避免空 ip_cidr 导致 500
+    if (!empty($serverIps)) {
+        array_unshift($rules, [
+            'ip_cidr'  => $serverIps,
+            'outbound' => 'direct',
+        ]);
     }
+
+    $this->config['route']['rules'] = $rules;
+}
 
     // ──────────────────────────────────────────
     // 以下 build* 方法按 isLegacy 做字段差异处理
