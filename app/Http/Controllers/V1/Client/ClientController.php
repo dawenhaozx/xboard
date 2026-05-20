@@ -59,26 +59,27 @@ class ClientController extends Controller
             $servers = $serversFiltered;
             $this->addPrefixToServerName($servers);
             if ($flag) {
-                foreach (array_reverse(glob(app_path('Protocols') . '/*.php')) as $file) {
-                    $file = 'App\\Protocols\\' . basename($file, '.php');
-                    // 识别 sing-box 客户端版本，传入协议类
-                    $singboxVersion = null;
+            foreach (array_reverse(glob(app_path('Protocols') . '/*.php')) as $file) {
+                $className = 'App\\Protocols\\' . basename($file, '.php');
+                $options = [];
+                if (stristr($className, 'SingBox') || stristr($className, 'Singbox')) {
                     if (stripos($flag, 'sing-box') !== false || stripos($flag, 'hiddify') !== false) {
-                        $singboxVersion = $version; // 已由上方 preg_match 解析
-                    }
-                    $class = new $file($user, $servers, ['singbox_version' => $singboxVersion]);
-                    $classFlags = explode(',', $class->flag);
-                    foreach ($classFlags as $classFlag) {
-                        if (stripos($flag, $classFlag) !== false) {
-                            return $class->handle();
-                        }
+                        $options = ['singbox_version' => $version];
                     }
                 }
+                $class = $options
+                    ? new $className($user, $servers, $options)
+                    : new $className($user, $servers);
+                $classFlags = explode(',', $class->flag);
+                foreach ($classFlags as $classFlag) {
+                    if (stripos($flag, $classFlag) !== false) {
+                        return $class->handle();
+                    }
+                }
+                $class = new General($user, $servers);
+                return $class->handle();
             }
-            $class = new General($user, $servers);
-            return $class->handle();
-        }
-    }
+            }
     /**
      * Summary of serverFilter
      * @param mixed $typesArr
