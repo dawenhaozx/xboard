@@ -5,17 +5,20 @@ COPY --from=mlocati/php-extension-installer /usr/bin/install-php-extensions /usr
 RUN install-php-extensions pcntl bcmath inotify \
     && apk --no-cache add shadow supervisor nginx sqlite nginx-mod-http-brotli mysql-client git patch \
     && addgroup -S -g 1000 www && adduser -S -G www -u 1000 www
-#复制项目文件以及配置文件
+
+RUN composer self-update --2
+
 WORKDIR /www
 COPY .docker /
 COPY . /www
+
 RUN composer install \
     --optimize-autoloader \
     --no-cache \
     --no-dev \
     --no-interaction \
     --no-audit \
-&& php artisan storage:link \
+    && php artisan storage:link \
     && cp /www/.env.example /www/.env \
     && chown -R www:www /www \
     && chmod -R 775 /www
