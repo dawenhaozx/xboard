@@ -28,6 +28,7 @@ class ClientController extends Controller
         'v2rayN' => '6.31',
         'surge' => '2398'
     ];
+    const SingBoxNewVersion = '1.12.0';
     // allowed types
     const AllowedTypes = ['vmess', 'vless', 'trojan', 'hysteria', 'shadowsocks', 'hysteria2'];
 
@@ -43,7 +44,7 @@ class ClientController extends Controller
         // get client version
         $version = preg_match('/\/v?(\d+(\.\d+){0,2})/', $flag, $matches) ? $matches[1] : null;
         $supportHy2 = $version ? collect(self::SupportedHy2ClientVersions)
-                ->contains(fn($minVersion, $client) => stripos($flag, $client) !== false && $this->versionCompare($version, $minVersion)) : true;
+            ->contains(fn($minVersion, $client) => stripos($flag, $client) !== false && $this->versionCompare($version, $minVersion)) : true;
         $user = $request->user;
         // account not expired and is not banned.
         $userService = new UserService();
@@ -59,6 +60,14 @@ class ClientController extends Controller
             $servers = $serversFiltered;
             $this->addPrefixToServerName($servers);
             if ($flag) {
+                // sing-box >= 1.12.0 分流
+                if (preg_match('/sing-box[\s\/]+([0-9.]+)/i', $flag, $singMatches)) {
+                    $singVersion = $singMatches[1];
+                    $class = $this->versionCompare($singVersion, self::SingBoxNewVersion)
+                        ? new \App\Protocols\SingBoxNew($user, $servers)
+                        : new \App\Protocols\SingBox($user, $servers);
+                    return $class->handle();
+                }
                 foreach (array_reverse(glob(app_path('Protocols') . '/*.php')) as $file) {
                     $file = 'App\\Protocols\\' . basename($file, '.php');
                     $class = new $file($user, $servers);
@@ -86,9 +95,9 @@ class ClientController extends Controller
     {
         return collect($servers)->reject(function ($server) use ($typesArr, $filterArr, $region, $supportHy2) {
             if ($server['type'] == "hysteria" && $server['version'] == 2) {
-                if(!in_array('hysteria2', $typesArr)){
+                if (!in_array('hysteria2', $typesArr)) {
                     return true;
-                }elseif(false == $supportHy2){
+                } elseif (false == $supportHy2) {
                     return true;
                 }
             }
