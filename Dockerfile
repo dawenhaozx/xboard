@@ -17,7 +17,7 @@ RUN composer install \
     --no-cache \
     --no-dev \
     --no-interaction \
-    --no-audit \
+    --no-security-blocking \
     && php artisan storage:link \
     && cp /www/.env.example /www/.env \
     && chown -R www:www /www \
