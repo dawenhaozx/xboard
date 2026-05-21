@@ -1,0 +1,142 @@
+{
+    "dns": {
+        "servers": [
+            {
+                "type": "https",
+                "tag": "remote",
+                "server": "1.1.1.1"
+            },
+            {
+                "type": "https",
+                "tag": "local",
+                "server": "223.5.5.5"
+            },
+            {
+                "type": "local",
+                "tag": "local-plain"
+            }
+        ],
+        "rules": [
+            {
+                "clash_mode": "global",
+                "action": "route",
+                "server": "remote"
+            },
+            {
+                "clash_mode": "direct",
+                "action": "route",
+                "server": "local"
+            },
+            {
+                "rule_set": "geosite-cn",
+                "action": "route",
+                "server": "local"
+            }
+        ],
+        "strategy": "prefer_ipv4"
+    },
+    "experimental": {
+        "cache_file": {
+            "enabled": true,
+            "path": "cache.db",
+            "cache_id": "cache_db",
+            "store_fakeip": true
+        }
+    },
+    "inbounds": [
+        {
+            "type": "tun",
+            "tag": "tun-in",
+            "address": ["172.19.0.1/30", "2001:0470:f9da:fdfa::1/64"],
+            "mtu": 9000,
+            "auto_route": true,
+            "strict_route": true,
+            "endpoint_independent_nat": true,
+            "stack": "system"
+        },
+        {
+            "type": "socks",
+            "tag": "socks-in",
+            "listen": "127.0.0.1",
+            "listen_port": 2333,
+            "users": []
+        },
+        {
+            "type": "mixed",
+            "tag": "mixed-in",
+            "listen": "127.0.0.1",
+            "listen_port": 2334,
+            "users": []
+        }
+    ],
+    "outbounds": [
+        {
+            "type": "selector",
+            "tag": "节点选择",
+            "default": "自动选择",
+            "outbounds": ["自动选择"]
+        },
+        {
+            "type": "urltest",
+            "tag": "自动选择",
+            "outbounds": [],
+            "url": "https://www.gstatic.com/generate_204",
+            "interval": "10m",
+            "tolerance": 50
+        },
+        { "type": "direct", "tag": "direct" }
+    ],
+    "route": {
+        "rules": [
+            {
+                "action": "sniff"
+            },
+            {
+                "action": "resolve",
+                "strategy": "prefer_ipv4"
+            },
+            {
+                "protocol": "dns",
+                "action": "hijack-dns"
+            },
+            {
+                "clash_mode": "direct",
+                "action": "route",
+                "outbound": "direct"
+            },
+            {
+                "clash_mode": "global",
+                "action": "route",
+                "outbound": "节点选择"
+            },
+            {
+                "ip_is_private": true,
+                "action": "route",
+                "outbound": "direct"
+            },
+            {
+                "rule_set": ["geoip-cn", "geosite-cn"],
+                "action": "route",
+                "outbound": "direct"
+            }
+        ],
+        "rule_set": [
+            {
+                "type": "remote",
+                "tag": "geoip-cn",
+                "format": "binary",
+                "url": "https://g.3337333.xyz/github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/sing/geo/geoip/cn.srs",
+                "download_detour": "direct"
+            },
+            {
+                "type": "remote",
+                "tag": "geosite-cn",
+                "format": "binary",
+                "url": "https://g.3337333.xyz/github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/sing/geo/geosite/cn.srs",
+                "download_detour": "direct"
+            }
+        ],
+        "auto_detect_interface": true,
+        "default_domain_resolver": "local"
+    }
+}
